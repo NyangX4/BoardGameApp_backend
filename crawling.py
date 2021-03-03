@@ -1,12 +1,13 @@
 # !pip install selenium
+
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import urllib
 import csv
+import re
 
 games_url = []
-
 for page in range(1, 3) :
     url = f"https://boardlife.co.kr/game_rank.php?tb=&pg={page}&file=&file2=&view_id="
     base_url = "https://boardlife.co.kr/"
@@ -21,7 +22,6 @@ for page in range(1, 3) :
             "title" : item.select_one("a.game_title").get_text().strip(),
             "url" : item.select_one("a.game_title")['href']
         })
-
 
 options = webdriver.ChromeOptions()
 options.add_argument('headless') # 웹 브라우저를 띄우지 않는 headless chrome 옵션 적용
@@ -41,16 +41,16 @@ for game in games_url :
     year = driver.find_element_by_xpath('/html/body/div[3]/table//tr/td/table//tr/td/table[1]//tr[3]/td[1]/div[1]/div[2]/div/table//tr/td[3]/table//tr[3]/td/table//tr/td[2]/table//tr[1]/td')
     year = year.text.split('(')[-1]
     year = int(year[:-2])
-    print(year)
 
     # 영어 이름
     title_eng = driver.find_element_by_xpath('/html/body/div[3]/table//tr/td/table//tr/td/table[1]//tr[3]/td[1]/div[1]/div[2]/div/table//tr/td[3]/table//tr[3]/td/table//tr/td[2]/table//tr[2]/td')
-    title_eng = title_eng.text.lower().replace(" ", "_")
+    title_eng = title_eng.text
+    img_title = re.sub(r"[^\w\s]", "", title_eng).replace(" ", "_")
 
     # 이미지 저장
     img_data = driver.find_element_by_xpath('/html/body/div[3]/table//tr/td/table//tr/td/table[1]//tr[3]/td[1]/div[1]/div[2]/div/table//tr/td[1]/table//tr[1]/td/img')
     with urllib.request.urlopen(img_data.get_attribute('src')) as f :
-        with open(f'./image/{title_eng}.png', 'wb') as h :
+        with open(f'./images/{img_title}.png', 'wb') as h :
             img = f.read()
             h.write(img)
 
@@ -108,7 +108,6 @@ for game in games_url :
 
 driver.quit()
 
-# csv 파일로 저장
 with open('board_games.csv', 'w', encoding='utf-8-sig', newline='') as f :
     w = csv.DictWriter(f, fieldnames=games[0].keys())
     w.writeheader()
